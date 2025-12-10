@@ -18,7 +18,7 @@ app.use(cors({
   credentials: true,
   origin: [
     "http://localhost:3000",
-    "https://kambaz-next-js-k1ic9wjbd-gia-violinis-projects.vercel.app"
+    "https://kambaz-next-js-hazel.vercel.app"
   ],
   methods: ["GET", "POST", "PUT", "DELETE"],
   allowedHeaders: ["Content-Type"]
