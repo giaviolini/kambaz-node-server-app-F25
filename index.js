@@ -1,63 +1,60 @@
-import "dotenv/config";
-
 import express from 'express';
+import mongoose from "mongoose";
 import Hello from "./Hello.js"
-import Lab5 from "./Lab5/index.js";
 import cors from "cors";
+import db from "./Kambaz/Database/index.js";
 import UserRoutes from "./Kambaz/Users/routes.js";
 import CourseRoutes from "./Kambaz/Courses/routes.js";
 import ModulesRoutes from './Kambaz/Modules/routes.js';
 import AssignmentsRoutes from './Kambaz/Assignments/routes.js';
+import QuizRoutes from './Kambaz/Quizzes/routes.js';
+import QuizAttemptRoutes from './Kambaz/Quizzes/Attempts/routes.js';
+import EnrollmentRoutes from './Kambaz/Enrollments/routes.js';
+import "dotenv/config";
 import session from "express-session";
-import mongoose from "mongoose";
-import MongoStore from "connect-mongo";
 
+const CONNECTION_STRING = process.env.DATABASE_CONNECTION_STRING || "mongodb+srv://giaviolini:ZiggyWiggy1715@cluster0.gnv0zci.mongodb.net/Kambaz?appName=Cluster0"
+mongoose.connect(CONNECTION_STRING);
 
 const app = express();
+
+// CORS - configure ONCE before routes
 app.use(cors({
-    credentials: true,
-    origin: process.env.CLIENT_URL || "http://localhost:3000"
+  credentials: true,
+  origin: process.env.CLIENT_URL || "http://localhost:3000",
+  methods: ["GET", "POST", "PUT", "DELETE"],
+  allowedHeaders: ["Content-Type"]
 }));
 
+// Session - configure ONCE
 const sessionOptions = {
   secret: process.env.SESSION_SECRET || "kambaz",
   resave: false,
   saveUninitialized: false,
-  store: MongoStore.create({
-    mongoUrl: process.env.DATABASE_CONNECTION_STRING,
-    collectionName: "sessions",
-  }),
   cookie: {
-    sameSite: "none",                     
-    secure: process.env.SERVER_ENV !== "development",  
+    secure: process.env.SERVER_ENV !== "development", // false for localhost, true for production
     httpOnly: true,
-    maxAge: 1000 * 60 * 60 * 24 * 7,      
-  },
-  proxy: process.env.SERVER_ENV !== "development",
+    sameSite: process.env.SERVER_ENV !== "development" ? "none" : "lax",
+    maxAge: 1000 * 60 * 60 * 24 // 24 hours
+  }
 };
 
+if (process.env.SERVER_ENV !== "development") {
+  sessionOptions.proxy = true;
+  sessionOptions.cookie.domain = process.env.SERVER_URL;
+}
+
 app.use(session(sessionOptions));
-app.use(express.json());
+app.use(express.json());  
+UserRoutes(app, db);
+CourseRoutes(app, db);
+ModulesRoutes(app, db);
+AssignmentsRoutes(app, db);
+QuizRoutes(app);
+QuizAttemptRoutes(app);
+EnrollmentRoutes(app, db);
+Hello(app);
 
-const DATABASE_CONNECTION_STRING = process.env.DATABASE_CONNECTION_STRING;
-
-mongoose.connect(DATABASE_CONNECTION_STRING);
-
-const db = mongoose.connection;
-
-db.on("error", console.error.bind(console, "MongoDB error:"));
-db.once("open", () => {
-  console.log("MongoDB connected");
-
-  
-  UserRoutes(app, db);
-  CourseRoutes(app, db);
-  ModulesRoutes(app, db);
-  AssignmentsRoutes(app, db);
-  Lab5(app);
-  Hello(app);
-
-  app.listen(process.env.PORT || 4000, () =>
-    console.log("Server running")
-  );
+app.listen(process.env.PORT || 4000, () => {
+  console.log(`Server running on port ${process.env.PORT || 4000}`);
 });
