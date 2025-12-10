@@ -1,38 +1,39 @@
 import { v4 as uuidv4 } from "uuid";
 
 export default function ModulesDao(db) {
+  const modules = db.collection("modules"); // MongoDB collection
 
-function updateModule(moduleId, moduleUpdates) {
-  const { modules } = db;
-  const module = modules.find((module) => module._id === moduleId);
-  Object.assign(module, moduleUpdates);
-  return module;
+  async function updateModule(moduleId, moduleUpdates) {
+    const result = await modules.findOneAndUpdate(
+      { _id: moduleId },
+      { $set: moduleUpdates },
+      { returnDocument: "after" }
+    );
+    return result.value; // updated module
+  }
+
+  async function deleteModule(moduleId) {
+    const result = await modules.deleteOne({ _id: moduleId });
+    return result.deletedCount === 1;
+  }
+
+  async function createModule(module) {
+    const newModule = { ...module, _id: uuidv4() };
+    await modules.insertOne(newModule);
+    return newModule;
+  }
+
+  async function findModulesForCourse(courseId) {
+    return await modules.find({ course: courseId }).toArray();
+  }
+
+  return {
+    findModulesForCourse,
+    createModule,
+    deleteModule,
+    updateModule,
+  };
 }
 
-
-function deleteModule(moduleId) {
-  const { modules } = db;
-  db.modules = modules.filter((module) => module._id !== moduleId);
-}
-
-
-function createModule(module) {
-  const newModule = { ...module, _id: uuidv4() };
-  db.modules = [...db.modules, newModule];
-  return newModule;
-}
-
- function findModulesForCourse(courseId) {
-   const { modules } = db;
-   return modules.filter((module) => module.course === courseId);
- }
-
- return {
-   findModulesForCourse,
-   createModule,
-   deleteModule,
-   updateModule
- };
-}
 
 
