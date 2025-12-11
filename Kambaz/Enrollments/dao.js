@@ -1,7 +1,6 @@
 import model from "./model.js";
 
-export default function EnrollmentsDao(db) {
-
+export default function EnrollmentsDao() {
   // FIND COURSES A USER IS ENROLLED IN
   async function findCoursesForUser(userId) {
     const enrollments = await model
@@ -20,7 +19,6 @@ export default function EnrollmentsDao(db) {
 
   // ENROLL A USER IN A COURSE
   async function enrollUserInCourse(userId, courseId) {
-    // Avoid duplicate enrollment
     const exists = await model.findOne({ user: userId, course: courseId });
     if (exists) return exists;
 
@@ -35,7 +33,7 @@ export default function EnrollmentsDao(db) {
     return model.deleteOne({ user: userId, course: courseId });
   }
 
-  // UNENROLL ALL USERS (USED WHEN COURSE IS DELETED)
+  // UNENROLL ALL USERS FROM A COURSE (USED WHEN COURSE IS DELETED)
   async function unenrollAllUsersFromCourse(courseId) {
     return model.deleteMany({ course: courseId });
   }
